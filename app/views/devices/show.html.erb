@@ -1,0 +1,423 @@
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.0.10.js"></script>
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap/3/css/bootstrap.css" />
+<%= javascript_tag do %>
+  temperature_data = <%= temperature_data.html_safe %>;
+  minTemperature = <%= min_temperature.to_i %>;
+  maxTemperature = <%= max_temperature.to_i %>;
+  averageTemperature = <%= average_temperature %>;
+  temperatureSum = <%= temperature_sum.to_i %>;
+  messageCount = <%= message_count.to_i %>;
+  deviceLocation = <%= device_location.html_safe %>;
+  miniTemp = 0;
+  maxiTemp = 0;
+  avgTemp = 0;
+  avgTempSum = 0;
+  device = <%= current_device.html_safe %>;
+  console.log(minTemperature);
+  console.log(maxTemperature);
+  console.log(averageTemperature);
+  var x_data = [], y_data =[], x_data_2 =[], y_data_2=[]; 
+  /*  for (var i = 0; i < temperature_data.length ; i += 1) {
+        //console.log(temperature_data[i]['date']);
+            x_data.push(new Date(temperature_data[i]['date']));
+            y_data.push(temperature_data[i]['temp']);
+    } */
+<% end %>             
+            <div class="middle">
+                 <div class="map-data">
+                    <div class='map'>
+                        <div id="map"></div>
+                    </div>
+                    <div class='location'>
+                        <p class="device_name">
+                         <%= @device.name %>   
+                        </p>
+                        <p class="device-address">
+                          <%= device_location %>
+                        </p>
+                    </div>
+                 </div>
+                 <div class="graph-data">
+                    <div class="device-stats">
+                        <div class="stats-label">
+                            <p class="celcius-text">Celcius</p>
+                        </div>
+                        <div class="max-temp-box">
+                            <p class="max-temp-text">Max Temp</p>
+                            <p class="max-temp-value"><%= max_temperature.to_i %></p>
+                        </div>
+                        <div class="min-temp-box">
+                            <p class="min-temp-text">Min Temp</p>
+                            <p class="min-temp-value"><%= min_temperature.to_i %> </p>
+                        </div>
+                        <div class="mean-temp-box">
+                            <p class="mean-temp-text">Mean Temp</p>
+                            <p class="mean-temp-value"><%= average_temperature %></p>
+                        </div>
+                        <div class="current-temp-box">
+                            <p class="current-temp-text">Last Temp</p>
+                            <p class="current-temp-value"><%= last_temperature.to_i %></p>
+                        </div>
+                    </div>
+                    <div class="graph-filter">
+                        <input class="live-button" type="button" value="LIVE" data-value='live'/>
+                        <label class="zoom">Zoom</label>
+                        <input class="zoom-button" id="oneM-button" type="button" value="1M"/>
+                        <input class="zoom-button" id="threeM-button" type="button" value="3M"/>
+                        <input class="zoom-button" id="sixM-button" type="button" value="6M"/>
+                        <input class="zoom-button" id="oneY-button" type="button" value="1Y"/>
+                        <input class="zoom-button" id="All-button" type="button" value="ALL"/>
+                        <input class="datefilter" type="text" name="daterange" value="01/09/2016 - 09/09/2016" />
+                    </div>
+                    <div class="graph">
+                        <div id="chart"></div>
+                    </div>
+                 </div>
+                 <div class="recent-data">
+                    <div class="customer-credentials">
+                        <img class="customer-logo" src="/itc-logo.jpg" alt="itc logo" />
+                    </div>
+                    <div class="data-list">
+                      <label class="recent-records">Recent records</label>
+                      <table id="temp-list" align="center">
+                          <thead>
+                            <tr>
+                              <th>Temp</th>
+                              <th>Date</th>
+                            </tr>
+                          </thead> 
+                          <tbody class="list">
+                              <tr>
+                                <td class="temp"></td>
+                                <td class="timetoken"></td>
+                              </tr>
+                          </tbody>
+                      </table>  
+                    </div>
+                 </div>
+            </div>
+            
+<script>
+var recentRecords = ["id","temp","timetoken", "timetokenvalue"];
+var recentRecordList = new List('temp-list',{page: 8, valueNames: recentRecords });
+window.onload = function () {
+  x_data.unshift("x");
+  y_data.unshift("temp");
+  var chart = c3.generate({
+                    padding: {
+                        top: 20,
+                        right: 50,
+                        bottom: 20,
+                        left: 50,
+                    },
+                    data: {
+                        x: 'x',
+                        columns: [x_data, y_data],
+                        type: 'line'
+                    },
+                    color: {
+                        pattern: ['black']
+                    },
+                    axis: {
+                        x: {
+                            label: "date",
+                            type: 'timeseries',
+                            tick: {
+                                count: 4,
+                                format: '%Y-%m-%d %H:%M:%S'
+                            }
+                        },
+                        y: {
+                            label: "temperature",
+                            tick: {
+                                format: function (d) {
+                                          return (parseInt(d) == d) ? d : d.toFixed(1);
+                                        }
+                            }
+                        }
+                    },
+                    zoom: {
+                        enabled: true
+                    },
+                    subchart: {
+                        show: true
+                    }
+            });
+   // x_data_2.unshift('x'); 
+   // y_data_2.unshift("temp");
+   /* jQuery('.map').on( "click", function(e){
+        console.log("coming inside!!!!")
+        chart.x(x_data_2);
+        chart.load({
+            columns: [ y_data_2 ],
+            unload: ['temp']
+        });
+    }); */
+     
+     jQuery('.zoom-button').on('click',function(){
+        var self = this;
+         $.ajax({
+                    url: '/devices/get_data',
+                    type: "GET",
+                    dataType: "json",
+                    data: { "range": self.value , 
+                            "device_id": device.id
+                          },
+                   
+                    success: function (outcome){
+                       console.log(outcome);
+                       loadData(outcome);
+
+                    },
+                    
+                    error: function(data){
+                    }
+                }); 
+     });
+
+     jQuery('.live-button').on('click', function(){
+        var color = jQuery(this).data('value') === "live" ? "red" : "green" ;
+        var value = color == "green" ? "live" : "unlive";
+        jQuery(this).css('color', color);
+        jQuery(this).data('value', value);
+     });
+     
+    $('.datefilter').daterangepicker({
+       locale: {
+            format: 'YYYY-MM-DD hh:mm:ss'
+        },
+        startDate: getMaxDate(new Date(), true),
+        endDate: getMaxDate(new Date(), true),
+        minDate: getMinDate(new Date(), true),
+        maxDate: getMaxDate(new Date(), true),
+        timePicker: true,
+        timePicker24Hour: true
+    }, 
+    function(start, end, label) {
+      setTimePeriod(start,"startDate");
+      setTimePeriod(end,"endDate");
+      var startDate = jQuery('.datefilter').data('startDate');
+      var endDate = jQuery('.datefilter').data('endDate')
+        $.ajax({
+                    url: '/devices/get_data',
+                    type: "GET",
+                    dataType: "json",
+                    data: { "start_date": startDate, 
+                            "end_date": endDate ,
+                            "device_id": device.id
+                          },
+                   
+                    success: function (outcome){
+                       console.log(outcome);
+                       loadData(outcome);
+
+                    },
+                    
+                    error: function(data){
+                    }
+                }); 
+    });
+
+    
+  function loadData(outcome){
+    var data_x = [], data_y =[];
+    console.log(outcome.messages.length);
+    if(jQuery('.live-button').data('value') == 'unlive'){
+        if(outcome.messages.length > 0 ){
+            for (var i = 0; i < outcome.messages.length ; i += 1) {
+                console.log(outcome.messages[i]['date']);
+                data_x.push(new Date(outcome.messages[i]['date']));
+                data_y.push(outcome.messages[i]['temp']);
+            }
+            data_x.unshift('x');
+            data_y.unshift("temp");
+            console.log(data_x);
+         }   
+         chart.load({
+                columns: [ data_x, data_y ],
+                unload: ['temp','x']
+         });
+    }    
+  }
+  function setTimePeriod(time_object,date_type){
+      var hour = getHour(time_object);
+      var appendZero = hour<10 ? "0" : ""
+      var time_string = time_object.format('YYYY-MM-DD')+" "+appendZero+hour+":"+time_object.format('mm');
+      jQuery(".datefilter").data(date_type,time_string);
+  }
+
+  function getMinDate(date, time_factor){
+    var day = date.getDate();
+    var month = date.getMonth()+1;
+    var year = date.getFullYear();
+    year = year-2;
+    var date_with_zero = year+"-"+(month<10 ? '0' :'')+month+"-"+(day<10 ? '0' :'')+day;
+    return time_factor ? date_with_zero+" 00:00:00" : date_with_zero;
+  }
+
+  function getMaxDate(date, time_factor){
+    var day = date.getDate();
+    var month = date.getMonth()+1;
+    var year = date.getFullYear();
+    var date_with_zero = year+"-"+(month<10 ? '0' :'')+month+"-"+(day<10 ? '0' :'')+day;
+    return time_factor ? date_with_zero+" 00:00:00" : date_with_zero;
+  }
+
+  function getHour(time_object){
+    var hour = parseInt(time_object.format('h'));
+    var hour_format = time_object.format('A');
+    if(hour_format=="PM"){
+       return hour = hour <12 ? (hour + 12) : hour ;
+    }
+    if(hour_format=="AM"){
+      return hour = hour==12 ? 00 : hour ;
+    }
+  }  
+
+  pubnub = new PubNub({
+    subscribeKey: 'sub-c-5c13a1ea-990a-11e6-b146-0619f8945a4f',
+    publishKey: 'pub-c-62bacde3-ed85-46c9-b90e-dcbafdfe3fb8',
+  })
+
+    function publishSampleMessage() {
+        console.log("Since we're publishing on subscribe connectEvent, we're sure we'll receive the following publish.");
+        var publishConfig = {
+            channel : "backfront",
+            message : {"temperature" : 25, "timetoken" : Math.floor(Date.now() / 1000) }
+        }
+        pubnub.publish(publishConfig, function(status, response) {
+            console.log(status, response);
+        })
+    }
+       
+    pubnub.addListener({
+        status: function(statusEvent) {
+            if (statusEvent.category === "PNConnectedCategory") {
+               // publishSampleMessage();
+            }
+        },
+        message: function(message) {
+            console.log("New Message!!", message);
+            loadLiveData(message);
+        },
+        presence: function(presenceEvent) {
+            // handle presence
+        }
+    })      
+    console.log("Subscribing..");
+    pubnub.subscribe({
+        channels: ['Channel-kdxvz6bsc'] ,
+        presence   : function( message, env, channel ) {   // PRESENCE EVENTS.
+            console.log( "Channel: ",            channel           );
+            console.log( "Join/Leave/Timeout: ", message.action    );
+            console.log( "Occupancy: ",          message.occupancy );
+            console.log( "User ID: ",            message.uuid      );
+        }
+    });
+    
+    function loadLiveData(outcome){
+      var data_x = [], data_y =[], timestamp,temp,tempstring,tempstringArray;
+      // console.log(outcome.message);
+      // console.log(outcome.timetoken);
+      if(outcome.message.substring(7,8) === "3") { 
+          tempstringArray = outcome.message.split(" ");
+          tempstring = tempstringArray[1];
+          temp = tempstring.substring(2,4);
+          timestamp = outcome.timetoken/1e4;
+          console.log(tempstringArray[0].substring(7,8));
+          console.log(new Date(timestamp));
+          console.log(tempstring);
+          console.log(temp);
+          x_data.push(new Date(timestamp));
+          y_data.push(temp);
+          if(jQuery('.live-button').data('value') == 'live'){
+            chart.load({
+                columns: [ x_data, y_data ],
+                unload: ['temp','x']
+            });
+            recentRecordList.add({ temp: temp ,
+                                   timetoken : moment(timestamp).format("LTS"), 
+                                   timetokenvalue: timestamp });
+            recentRecordList.sort('timetokenvalue', { order: "desc" });
+            reloadMinTemperature(parseInt(temp));
+            reloadMaxTemperature(parseInt(temp));
+            reloadAverageTemperature(parseInt(temp));
+            reloadLastTemperature(temp);
+          }  
+      } 
+    }
+
+    function reloadMinTemperature(temp){
+      if(minTemperature==0){
+        console.log("coming here min temp");
+        miniTemp = temp < miniTemp ? temp : miniTemp;
+        miniTemp = miniTemp == 0 ? temp : miniTemp;
+        jQuery(".min-temp-value").text(miniTemp);
+      }else{
+        var minTemp = temp < minTemperature ? temp : minTemperature ; 
+        jQuery(".min-temp-value").text(minTemp);
+      } 
+    }
+    function reloadMaxTemperature(temp){
+      if(maxTemperature==0){
+        console.log("coming here max temp");
+        maxiTemp = temp > maxiTemp ? temp : maxiTemp;
+        jQuery(".max-temp-value").text(maxiTemp);
+      }else{
+        var maxTemp = temp > maxTemperature ? temp : maxTemperature ; 
+        jQuery(".max-temp-value").text(maxTemp);
+      }
+    }
+    function reloadAverageTemperature(temp){
+      if(temperatureSum==0){
+        console.log("coming here avg temp");
+        messageCount++;
+        avgTempSum = avgTempSum + temp;
+        avgTemp = avgTempSum/messageCount;
+        jQuery(".mean-temp-value").text(Math.ceil(avgTemp * 100)/100);
+      }else{
+        messageCount++;
+        averageTemp = (temperatureSum + temp)/messageCount;
+        var maxTemp = temp > maxTemperature ? temp : maxTemperature ; 
+        jQuery(".mean-temp-value").text(Math.ceil(averageTemp * 100)/100);
+      }
+    }
+    function reloadLastTemperature(temp){
+      jQuery(".current-temp-value").text(temp);
+    }
+
+}
+
+</script>
+<script>
+      function initMap() {
+        console.log("coming here!!");
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 8,
+          center: {lat: 13.0827, lng: 80.2707}
+        });
+        var geocoder = new google.maps.Geocoder();
+
+      
+          geocodeAddress(geocoder, map);
+      
+      }
+
+      function geocodeAddress(geocoder, resultsMap) {
+        geocoder.geocode({'address': deviceLocation }, function(results, status) {
+          if (status === 'OK') {
+            resultsMap.setCenter(results[0].geometry.location);
+            var marker = new google.maps.Marker({
+              map: resultsMap,
+              position: results[0].geometry.location
+            });
+          } else {
+            alert('Geocode was not successful for the following reason: ' + status);
+          }
+        });
+      }
+</script>
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBAku0HEpFEy0B1EDoycg7PIvaB0XeS6h0&callback=initMap">
+</script>
+  

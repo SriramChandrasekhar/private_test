@@ -1,0 +1,24 @@
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap/3/css/bootstrap.css" />
+<h1>Listing devices</h1>
+
+<table style="margin-bottom: 130px">
+  <thead>
+    <tr>
+      <th>Device id</th>
+      <th>Device name</th>
+    </tr>
+  </thead>
+
+  <tbody>
+      <% @devices.each do |device| %>
+      <tr>
+        <td><%= link_to "#{device.id}", device, method: :get %></td>
+        <td><%= link_to "#{device.name}", device, method: :get %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+
+
+

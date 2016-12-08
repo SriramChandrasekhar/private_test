@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tempsense</title>
+  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  <%= csrf_meta_tags %>
+</head>
+<body>
+	<div class="flex">
+
+            <header>
+             <div class="title">
+                 Intlosol
+             </div>
+            </header>
+				<%= yield %>
+			<footer>
+             <p>Intlosol LTD, 2016</p>
+            </footer>
+        
+     </div>  
+</body>
+</html>
